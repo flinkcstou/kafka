@@ -13,6 +13,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "com.example.kafka.models.DTO" # Укажите пакет, где находится UserDto
+        spring.json.value.default.type: "com.example.kafka.models.DTO.AbstractKafkaDTO" # Укажите пакет, где находится UserDto
+        spring.json.fail-on-unknown-properties: false
     admin:
       auto-create: true
 
