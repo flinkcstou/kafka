@@ -18,5 +18,11 @@ spring:
     admin:
       auto-create: true
 
+  datasource:
+    url: jdbc:postgresql://localhost:5434/mydatabase
+    username: myuser
+    password: secret
+    driver-class-name: org.postgresql.Driver
+
 kafka-variable:
   topic-key: asdf
