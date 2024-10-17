@@ -16,6 +16,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.listener.ConsumerRecordRecoverer;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
@@ -34,7 +35,7 @@ public class KafkaConsumerConfig {
     private final KafkaProperties kafkaProperties;
 
 
-    public Map<String, Object> consumerConfig() {
+    private Map<String, Object> consumerConfig() {
         Map<String, Object> stringObjectMap = kafkaProperties.buildConsumerProperties(null);
         Map<String, Object> props = new HashMap<>(stringObjectMap);
 
@@ -47,15 +48,7 @@ public class KafkaConsumerConfig {
         return props;
     }
 
-    @Bean
-    public ConsumerFactory<String, Object> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(consumerConfig());
-    }
-
-    @Bean
-    public DefaultErrorHandler errorHandler() {
-        // Если при обработке сообщении в kafkaListener падает ошибка: вызывается повторно 2 раза, а дальше отправляется в DTL
-        // Создание DeadLetterPublishingRecoverer с логированием через BiFunction
+    private DeadLetterPublishingRecoverer createDLTRecoverer() {
         var destinationResolver = (BiFunction<ConsumerRecord<?, ?>, Exception, TopicPartition>) (record, ex) -> {
             log.error("cPjGid5 :: Error processing message in consumer of KafkaListener value: {}. Exception: {} ", record.value(), ex.getMessage(), ex);
 
@@ -64,10 +57,26 @@ public class KafkaConsumerConfig {
             log.info("gOayeDtk :: Exception kafka message caught and sending to DLT: {} ", topicPartition);
             return topicPartition;
         };
-        // Если при обработке сообщении в kafkaListener падает ошибка: вызывается повторно 2 раза, а дальше в DTL
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate, destinationResolver);
+        return recoverer;
+    }
+
+    @Bean
+    public ConsumerFactory<String, Object> consumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(consumerConfig());
+    }
+
+
+    @Bean
+    public DefaultErrorHandler errorHandler() {
+        // Если при обработке сообщении в kafkaListener падает ошибка: вызывается повторно 2 раза
         FixedBackOff backOff = new FixedBackOff(1000L, 2);
-        return new DefaultErrorHandler(recoverer, backOff);
+
+        ConsumerRecordRecoverer consumerRecordRecoverer = (record, ex) -> {
+            log.error("cPjGid5 :: Error processing message in consumer of KafkaListener value: {}. Exception: {} ", record.value(), ex.getMessage(), ex);
+        };
+
+        return new DefaultErrorHandler(consumerRecordRecoverer, backOff);
     }
 
     @Bean
