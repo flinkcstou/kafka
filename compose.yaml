@@ -39,6 +39,14 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      #изучить что делает эти переменные
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9997
+      KAFKA_JMX_HOSTNAME: kafka
 
     networks:
       - kafka-network
@@ -55,7 +63,6 @@ services:
     networks:
       - kafka-network
 
-
   kafka-rest:
     image: confluentinc/cp-kafka-rest:7.4.0
     container_name: kafka-rest
@@ -67,6 +74,20 @@ services:
       KAFKA_REST_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_REST_LISTENERS: http://0.0.0.0:8082
       KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema-registry:8081  # Если у вас есть Schema Registry
+    networks:
+      - kafka-network
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - '8083:8080'
+    environment:
+      DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      - kafka
     networks:
       - kafka-network
 
