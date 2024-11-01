@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class KafkaUserDTO extends AbstractKafkaDTO {
     private String name;
+    private KafkaUserTypeEnum kafkaUserTypeEnum;
 
     public KafkaUserDTO(String id, LocalDateTime localDateTime, String name) {
         super(id, localDateTime);

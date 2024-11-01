@@ -69,8 +69,8 @@ public class KafkaConsumerConfig {
 
     @Bean
     public DefaultErrorHandler errorHandler() {
-        // Если при обработке сообщении в kafkaListener падает ошибка: вызывается повторно 2 раза
-        FixedBackOff backOff = new FixedBackOff(1000L, 2);
+        // Если при обработке сообщении в kafkaListener падает ошибка: вызывается повторно 0 раза
+        FixedBackOff backOff = new FixedBackOff(1000L, 0);
 
         ConsumerRecordRecoverer consumerRecordRecoverer = (record, ex) -> {
             log.error("cPjGid5 :: Error processing message in consumer of KafkaListener value: {}. Exception: {} ", record.value(), ex.getMessage(), ex);
