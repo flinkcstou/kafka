@@ -13,6 +13,8 @@ import java.util.function.Supplier;
 
 public class KafkaConsumerJsonDeserializer<T> extends JsonDeserializer<T> {
 
+    private Map<String, Class<?>> customTopic;
+
     @Override
     public T deserialize(String topic, Headers headers, ByteBuffer data) {
         return deserialize(topic, headers, Utils.toNullableArray(data));
@@ -22,7 +24,7 @@ public class KafkaConsumerJsonDeserializer<T> extends JsonDeserializer<T> {
     public T deserialize(String topic, Headers headers, byte[] data) {
         return deserializeDecorator(
                 () -> super.deserialize(topic, headers, data),
-                () -> deserializeToAbstractKafkaDto(data));
+                () -> deserializeToAbstractKafkaDto(data, topic));
 
     }
 
@@ -30,12 +32,17 @@ public class KafkaConsumerJsonDeserializer<T> extends JsonDeserializer<T> {
     public T deserialize(String topic, byte[] data) {
         return deserializeDecorator(
                 () -> super.deserialize(topic, data),
-                () -> deserializeToAbstractKafkaDto(data));
+                () -> deserializeToAbstractKafkaDto(data, topic));
     }
 
     @SneakyThrows
-    public T deserializeToAbstractKafkaDto(byte[] data) {
-        return objectMapper.readValue(data, AbstractKafkaDTOType());
+    public T deserializeToAbstractKafkaDto(byte[] data, String topic) {
+        try {
+            return objectMapper.readValue(data, AbstractKafkaDTOType());
+        } catch (Exception e) {
+            return (T) objectMapper.readValue(data, this.customTopic.get(topic));
+        }
+
     }
 
     public T deserializeDecorator(Supplier<T> s, Supplier<T> s1) {
@@ -48,6 +55,9 @@ public class KafkaConsumerJsonDeserializer<T> extends JsonDeserializer<T> {
 
     @Override
     public synchronized void configure(Map<String, ?> configs, boolean isKey) {
+
+        this.customTopic = (Map<String, Class<?>>) configs.get("custom-topic");
+
         super.configure(configs, isKey);
     }
 

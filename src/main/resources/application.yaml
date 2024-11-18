@@ -12,9 +12,14 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.example.kafka.models.DTO" # Укажите пакет, где находится UserDto
-        spring.json.value.default.type: "com.example.kafka.models.DTO.AbstractKafkaDTO" # Укажите пакет, где находится UserDto
-        spring.json.fail-on-unknown-properties: false
+        spring:
+          json:
+            fail-on-unknown-properties: false
+            value:
+              default:
+                type: "com.example.kafka.models.DTO.AbstractKafkaDTO"
+            trusted:
+              packages: "com.example.kafka.models.DTO"
     admin:
       auto-create: true
 
@@ -24,5 +29,18 @@ spring:
     password: secret
     driver-class-name: org.postgresql.Driver
 
-kafka-variable:
-  topic-key: asdf
+kafka:
+  topic-default: kafka-topic-default
+  topic: kafka-topic
+  topic-second: kafka-topic-second
+
+new-kafka:
+  bootstrap-servers: 10.4.113.12:9092,10.4.113.13:9092,10.4.113.14:9092
+  properties:
+    security.protocol: 'SASL_PLAINTEXT'
+    sasl.mechanism: 'PLAIN'
+    sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="bbsnsusr_out" password="12345678";
+  topic: OMICRON.BBUSINESS.ANALYTIC-LOG-EVENT
+
+
+

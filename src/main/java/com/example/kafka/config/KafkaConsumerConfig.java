@@ -2,12 +2,16 @@ package com.example.kafka.config;
 
 import com.example.kafka.deserializer.KafkaConsumerJsonDeserializer;
 import com.example.kafka.models.DTO.AbstractKafkaDTO;
+import com.example.kafka.models.DTO.KafkaDTO;
+import com.example.kafka.models.DTO.KafkaSecondDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -32,18 +36,21 @@ import java.util.function.BiFunction;
 public class KafkaConsumerConfig {
 
     private final KafkaTemplate<String, AbstractKafkaDTO> kafkaTemplate;
-    private final KafkaProperties kafkaProperties;
+    private final KafkaProperties properties;
 
 
-    private Map<String, Object> consumerConfig() {
-        Map<String, Object> stringObjectMap = kafkaProperties.buildConsumerProperties(null);
-        Map<String, Object> props = new HashMap<>(stringObjectMap);
-
+    private Map<String, Object> commonKafkaProps(ObjectProvider<SslBundles> sslBundles) {
+        Map<String, Object> props = properties.buildConsumerProperties(sslBundles.getIfAvailable());
 
         // ErrorHandlingDeserializer используется если упала ошибка на уровне десериализации, отправить ошибку в DefaultErrorHandler
         // KafkaConsumerJsonDeserializer обертка над JsonSerializer
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, KafkaConsumerJsonDeserializer.class);
+        Map<String, Class<?>> topic = new HashMap<>();
+        topic.put("kafka-topic", KafkaDTO.class);
+        topic.put("kafka-topic-second", KafkaSecondDTO.class);
+        props.put("custom-topic", topic);
+//        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, KafkaDTO.class);
 //        props.put(ObjectMapperConfiguration.OBJECT_MAPPER, objectMapper);
         return props;
     }
@@ -62,8 +69,9 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConsumerFactory<String, Object> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>(consumerConfig());
+    public ConsumerFactory<String, Object> consumerFactory(ObjectProvider<SslBundles> sslBundles) {
+        return new DefaultKafkaConsumerFactory<>(commonKafkaProps(sslBundles));
+
     }
 
 
@@ -80,9 +88,9 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory() {
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, Object>> kafkaListenerContainerFactory2(ObjectProvider<SslBundles> sslBundles) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(consumerFactory(sslBundles));
         factory.setCommonErrorHandler(errorHandler());
         return factory;
     }

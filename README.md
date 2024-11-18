@@ -35,3 +35,5 @@ docker-compose logs kafka
 
 
 ```
+
+https://softwaremill.com/kafka-visualisation/
